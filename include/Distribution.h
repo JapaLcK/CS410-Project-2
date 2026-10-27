@@ -14,12 +14,12 @@ class Distribution
         std::unordered_map<int, int> items;
     
     public:
-    Distribution(int householdId, int staffId, std::string date);
-    bool addItem(int foodItemId, int quantity); 
-    int getHouseholdId() const;
-    int getStaffId() const;
-    std::string getDate() const; 
-    int getItemQuantity(int foodItemId) const:
+        Distribution(int householdId, int staffId, std::string date);
+        bool addItem(int foodItemId, int quantity); 
+        int getHouseholdId() const;
+        int getStaffId() const;
+        std::string getDate() const; 
+        int getItemQuantity(int foodItemId) const;
      
     
     
