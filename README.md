@@ -10,9 +10,11 @@ A CS 410 project to help pantry volunteers track donated inventory and record fo
 - Flag items that are expired, near expiration, damaged, or unavailable.
 - Provide useful inventory and distribution reports for pantry staff.
 
-## Status
+## Current Status
 
-Requirements gathering. The product owner will confirm the data to collect, distribution rules, household records, and reporting needs before implementation decisions are made.
+The Distribution class records household ID, staff ID, date, and food item quantities. It rejects nonpositive quantities and accumulates quantities when the same item is added again.
+
+Inventory validation and the complete application workflow are still pending.
 
 ## Initial product-owner questions
 
@@ -22,6 +24,45 @@ Requirements gathering. The product owner will confirm the data to collect, dist
 4. How should expired, damaged, reserved, or otherwise unavailable items be handled?
 5. Which reports and alerts would be most useful to pantry staff?
 
-## Repository structure
+## Repository Structure
 
-This repository currently contains the project brief. Application code and documentation will be added as requirements are confirmed.
+- `include/`: C++ class declarations.
+- `src/`: C++ implementations.
+- `tests/`: automated tests.
+- `docs/`: project documentation.
+- `.github/workflows/`: continuous integration configuration.
+- `CMakeLists.txt`: build and test configuration.
+
+## Requirements
+
+- A C++17-compatible compiler
+- CMake 3.16 or newer
+- Git and internet access to download GoogleTest during configuration
+
+## Build
+
+```bash
+cmake -S . -B build
+cmake --build build
+```
+
+## Run Tests
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+Four automated tests verify:
+
+- Adding a valid quantity.
+- Rejecting zero quantity.
+- Accumulating quantities for the same item.
+- Rejecting negative quantity without changing the existing quantity.
+
+## Continuous Integration
+
+GitHub Actions builds the project and runs the tests on pushes and pull requests.
+
+## Running the Application
+
+An application executable is not available yet. The current build provides the Distribution library and its tests.
