@@ -38,7 +38,7 @@ int Distribution::getItemQuantity(int foodItemId) const {
     }
     // if exists, searchs foodItemId in map.
     return it->second; 
-    const std::unordered_map<int, int>& Distribution::getItems() const {
+    }
+const std::unordered_map<int, int>& Distribution::getItems() const {
     return items;
     }
-}

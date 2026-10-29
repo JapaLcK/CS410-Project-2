@@ -42,7 +42,7 @@ if(BUILD_TESTING)
     gtest_discover_tests(distribution_tests)
     add_executable(
     inventory_service_tests
-    tests/test_inventory_service.cpp
+    tests/test_InventoryService.cpp
 )
 
 target_link_libraries(
