@@ -42,7 +42,7 @@ if(BUILD_TESTING)
     gtest_discover_tests(distribution_tests)
     add_executable(
     inventory_service_tests
-    tests/test_inventory_service.cpp
+    tests/test_InventoryService.cpp
 )
 
 target_link_libraries(
@@ -53,7 +53,5 @@ target_link_libraries(
 gtest_discover_tests(inventory_service_tests)
 endif()
 
-
-#Add the following when src/main.cpp is added:
-# add_executable(food_pantry src/main.cpp)
-# target_link_libraries(food_pantry PRIVATE pantry_lib)
+add_executable(food_pantry src/main.cpp)
+target_link_libraries(food_pantry PRIVATE pantry_lib)
