@@ -8,3 +8,7 @@ build/
 coverage/
 __pycache__/
 .pytest_cache/
+.claude
+
+.vscode/
+run_tests
