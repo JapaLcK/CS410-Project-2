@@ -53,7 +53,5 @@ target_link_libraries(
 gtest_discover_tests(inventory_service_tests)
 endif()
 
-
-#Add the following when src/main.cpp is added:
-# add_executable(food_pantry src/main.cpp)
-# target_link_libraries(food_pantry PRIVATE pantry_lib)
+add_executable(food_pantry src/main.cpp)
+target_link_libraries(food_pantry PRIVATE pantry_lib)
