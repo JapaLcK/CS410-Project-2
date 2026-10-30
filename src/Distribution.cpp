@@ -32,10 +32,13 @@ std::string Distribution::getDate() const {
 int Distribution::getItemQuantity(int foodItemId) const {
     auto it = items.find(foodItemId);
 
-    // if food id does not exist, return 0
+    // if food id does not exist, returns 0
     if (items.find(foodItemId) == items.end()) {
         return 0;
     }
-    // if exists, search foodItemId in map.
-    return it->second; //search in attribute items defined in .h
-}
+    // if exists, searchs foodItemId in map.
+    return it->second; 
+    }
+const std::unordered_map<int, int>& Distribution::getItems() const {
+    return items;
+    }

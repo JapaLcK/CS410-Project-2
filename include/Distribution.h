@@ -20,6 +20,8 @@ class Distribution
         int getStaffId() const;
         std::string getDate() const; 
         int getItemQuantity(int foodItemId) const;
+        const std::unordered_map<int, int>& getItems() const;
+    
      
     
     

@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 #all additional implementation files must be added here.
-add_library(pantry_lib src/Distribution.cpp)
+add_library(pantry_lib
+    src/Distribution.cpp
+    src/FoodItem.cpp
+    src/InventoryService.cpp
+)
 target_include_directories(pantry_lib PUBLIC include)
 
 include(CTest)
@@ -36,7 +40,19 @@ if(BUILD_TESTING)
 
     include(GoogleTest)
     gtest_discover_tests(distribution_tests)
+    add_executable(
+    inventory_service_tests
+    tests/test_InventoryService.cpp
+)
+
+target_link_libraries(
+    inventory_service_tests
+    PRIVATE pantry_lib GTest::gtest_main
+)
+
+gtest_discover_tests(inventory_service_tests)
 endif()
+
 
 #Add the following when src/main.cpp is added:
 # add_executable(food_pantry src/main.cpp)
