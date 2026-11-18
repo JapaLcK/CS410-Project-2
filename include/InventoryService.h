@@ -3,7 +3,7 @@
 #define INVENTORY_SERVICE_H
 
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 #include "FoodItem.h"
@@ -11,7 +11,8 @@
 
 class InventoryService {
 private:
-    std::unordered_map<int, FoodItem> inventory;
+    // The map stores each item by ID and keeps the IDs sorted.
+    std::map<int, FoodItem> inventory;
     std::vector<Distribution> distributions;
 
 public:
@@ -26,6 +27,9 @@ public:
     );
 
     const FoodItem* getFoodItem(int foodItemId) const;
+
+    // Returns a snapshot of all items ordered by ID.
+    std::vector<FoodItem> getInventoryItems() const;
 
     int getDistributionCount() const;
 };
