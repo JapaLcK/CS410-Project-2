@@ -1,17 +1,19 @@
 
 #include "InventoryService.h"
 
+#include <limits>
+
 namespace {
 
-bool isValidDistributionDate(const std::string& date) {
+bool isValidCalendarDate(const std::string& date) {
     // YYYY-MM-DD has exactly 10 characters, with hyphens at positions 4 and 7.
     if (date.size() != 10 || date[4] != '-' || date[7] != '-') {
         return false;
     }
 
-    // Check that every character in the year, month, and day fields is a digit.
-    for (char digit : date.substr(0, 4) + date.substr(5, 2) + date.substr(8, 2)) {
-        if (digit < '0' || digit > '9') {
+    // The two hyphens were checked above. Every other character must be a digit.
+    for (int i = 0; i < 10; i++) {
+        if (i != 4 && i != 7 && (date[i] < '0' || date[i] > '9')) {
             return false;
         }
     }
@@ -36,26 +38,37 @@ bool isValidDistributionDate(const std::string& date) {
     return day <= daysPerMonth[month - 1] + extraDay;
 }
 
-} 
+}
 
 bool InventoryService::addFoodItem(const FoodItem& item) {
+    // Validate the item before inserting it into inventory.
     if (item.getId() <= 0 ||
-        item.getQuantityAvailable() < 0) {
+        item.getQuantityAvailable() < 0 ||
+        item.getName().find_first_not_of(" \t\n\r\f\v") == std::string::npos ||
+        !isValidCalendarDate(item.getExpirationDate())) {
         return false;
     }
 
-    auto result = inventory.emplace(item.getId(), item);
-    return result.second;
+    // emplace leaves an existing item alone and reports whether it inserted the new one.
+    return inventory.emplace(item.getId(), item).second;
 }
 
 bool InventoryService::addDonation(int foodItemId, int quantity) {
+    // Find the item by ID and require a positive donation quantity.
     auto it = inventory.find(foodItemId);
-
     if (it == inventory.end() || quantity <= 0) {
         return false;
     }
 
-    it->second.addQuantity(quantity);
+    // Check how many more units fit in an int before adding any stock.
+    FoodItem& item = it->second;
+    const int remainingSpace = std::numeric_limits<int>::max() - item.getQuantityAvailable();
+    if (quantity > remainingSpace) {
+        return false;
+    }
+
+    // Update stock only after all checks pass.
+    item.addQuantity(quantity);
     return true;
 }
 
@@ -69,6 +82,15 @@ const FoodItem* InventoryService::getFoodItem(
     }
 
     return &(it->second);
+}
+
+std::vector<FoodItem> InventoryService::getInventoryItems() const {
+    // Copy each item in ID order so the menu gets a snapshot of current stock.
+    std::vector<FoodItem> items;
+    for (const auto& entry : inventory) {
+        items.push_back(entry.second);
+    }
+    return items;
 }
 
 int InventoryService::getDistributionCount() const {
@@ -88,7 +110,7 @@ bool InventoryService::processDistribution(
     }
 
     // Reject invalid dates before updating stock or recording the distribution.
-    if (!isValidDistributionDate(distribution.getDate())) {
+    if (!isValidCalendarDate(distribution.getDate())) {
         errorMessage = "Distribution date must be a valid date in YYYY-MM-DD format.";
         return false;
     }
