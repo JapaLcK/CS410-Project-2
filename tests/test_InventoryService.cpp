@@ -91,6 +91,47 @@ TEST(InventoryServiceTest, AddsDonationToInventory) {
     EXPECT_EQ(service.getFoodItem(101)->getQuantityAvailable(), 15);
 }
 
+TEST(InventoryServiceTest, RejectsInvalidDistributionDatesWithoutChangingStock) {
+    // Cover an impossible day, a missing leading zero, and a non-leap century year.
+    for (const char* date : {"2026-02-30", "2026-2-03", "1900-02-29"}) {
+        // Show which input caused the failure if an assertion fails.
+        SCOPED_TRACE(date);
+
+        // Start each case with 10 units of unexpired rice.
+        InventoryService service;
+        ASSERT_TRUE(service.addFoodItem(FoodItem(1, "Rice", 10, "2029-12-31")));
+
+        // Request 3 units so the date is the only invalid part of the request.
+        Distribution distribution(1, 2, date);
+        ASSERT_TRUE(distribution.addItem(1, 3));
+
+        // Verify that the service rejects the request and explains why.
+        std::string message;
+        EXPECT_FALSE(service.processDistribution(distribution, "2028-03-01", message));
+        EXPECT_EQ(message, "Distribution date must be a valid date in YYYY-MM-DD format.");
+
+        // A rejected request must leave the stock and distribution records intact.
+        EXPECT_EQ(service.getFoodItem(1)->getQuantityAvailable(), 10);
+        EXPECT_EQ(service.getDistributionCount(), 0);
+    }
+}
+
+TEST(InventoryServiceTest, AcceptsDistributionOnLeapDay) {
+    // Start with 10 units of unexpired rice.
+    InventoryService service;
+    ASSERT_TRUE(service.addFoodItem(FoodItem(1, "Rice", 10, "2029-12-31")));
+
+    // February 29 exists in 2028. Request 3 units on that date.
+    Distribution distribution(1, 2, "2028-02-29");
+    ASSERT_TRUE(distribution.addItem(1, 3));
+
+    // Verify that the request succeeds, deducts the stock, and creates one record.
+    std::string message;
+    EXPECT_TRUE(service.processDistribution(distribution, "2028-03-01", message));
+    EXPECT_EQ(service.getFoodItem(1)->getQuantityAvailable(), 7);
+    EXPECT_EQ(service.getDistributionCount(), 1);
+}
+
 TEST(InventoryServiceTest, AddsFoodItemAndRejectsDuplicateId) {
     InventoryService service;
     // A new item can start at zero stock and have a leap-day expiration date.

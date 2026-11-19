@@ -109,6 +109,12 @@ bool InventoryService::processDistribution(
         return false;
     }
 
+    // Reject invalid dates before updating stock or recording the distribution.
+    if (!isValidCalendarDate(distribution.getDate())) {
+        errorMessage = "Distribution date must be a valid date in YYYY-MM-DD format.";
+        return false;
+    }
+
     
     for (const auto& request : requestedItems) {
         int foodItemId = request.first;
