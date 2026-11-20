@@ -2,10 +2,38 @@
 #include <iostream>
 #include <string>
 #include <limits>
+#include <sstream>
 
 #include "Distribution.h"
 #include "FoodItem.h"
 #include "InventoryService.h"
+#include "DateUtils.h"
+
+bool readInteger(const std::string& prompt, int& value, int minimum) {
+    std::string input;
+
+    while (true) {
+        std::cout << prompt;
+
+        if (!std::getline(std::cin, input)) {
+            return false; // Input ended or could not be read.
+        }
+
+        std::istringstream stream(input);
+        int number;
+        char extra;
+
+        if ((stream >> number) &&
+            !(stream >> extra) &&
+            number >= minimum) {
+            value = number;
+            return true;
+        }
+
+        std::cout << "Please enter a whole number of at least "
+                  << minimum << ". Please try again.\n";
+    }
+}
 
 void displayInventory(const InventoryService& service) {
     const auto items = service.getInventoryItems();
@@ -42,25 +70,29 @@ void registerDistribution(InventoryService& service){
     std::string date;
 
     std::cout << "Food Pantry - Register Distribution\n\n";
-    std::cout << "Household ID: ";
 
-    if (!(std::cin >> householdId) || householdId <= 0) {
-        std::cout << "Invalid household ID.\n";
+    if (!readInteger("Household ID: ", householdId, 1)) {
         return;
     }
 
-    std::cout << "Staff ID: ";
-
-    if (!(std::cin >> staffId) || staffId <= 0) {
-        std::cout << "Invalid staff ID.\n";
+    if (!readInteger("Staff ID: ", staffId, 1)) {
         return;
     }
 
-    std::cout << "Distribution date (YYYY-MM-DD): ";
+    while (true) {
+        std::cout << "Distribution date (YYYY-MM-DD): ";
 
-    if (!(std::cin >> date)) {
-        std::cout << "Invalid date input.\n";
+        if (!std::getline(std::cin, date)) {
         return;
+    }
+
+        if (!isValidCalendarDate(date)) {
+            std::cout << "Enter a valid date in YYYY-MM-DD format. "
+                        "Please try again.\n";
+            continue;
+        }
+
+        break;
     }
 
     Distribution distribution(householdId, staffId, date);
@@ -71,27 +103,70 @@ void registerDistribution(InventoryService& service){
         int foodItemId;
         int quantity;
 
-        std::cout << "\nFood item ID (0 to submit): ";
-
-        if (!(std::cin >> foodItemId)) {
-            std::cout << "Invalid food item ID.\n";
+        if (!readInteger("\nFood item ID (0 to submit): ",
+                        foodItemId, 0)) {
             return;
         }
 
         if (foodItemId == 0) {
+            if (distribution.getItems().empty()) {
+                std::cout << "Add at least one item before submitting. "
+                            "Please try again.\n";
+                continue;
+            }
+
             break;
         }
 
-        std::cout << "Quantity: ";
+        const FoodItem* food = service.getFoodItem(foodItemId);
 
-        if (!(std::cin >> quantity)) {
-            std::cout << "Invalid quantity input.\n";
-            return;
+        if (food == nullptr) {
+            std::cout << "That food item ID does not exist. "
+                        "Please try again.\n";
+            continue;
         }
 
-        if (!distribution.addItem(foodItemId, quantity)) {
-            std::cout << "Request cancelled: quantity must be positive.\n";
-            return;
+        if (food->getExpirationDate() < currentDate) {
+            std::cout << "That food item has expired. "
+                        "Please try another food item ID.\n";
+            continue;
+        }
+
+        // Include any quantity already requested for this item.
+        int alreadyRequested = 0;
+        const auto& requestedItems = distribution.getItems();
+        auto it = requestedItems.find(foodItemId);
+
+        if (it != requestedItems.end()) {
+            alreadyRequested = it->second;
+        }
+
+        int remaining = food->getQuantityAvailable() - alreadyRequested;
+
+        if (remaining <= 0) {
+            std::cout << "No more stock is available for this request. "
+                        "Please try another food item ID.\n";
+            continue;
+        }
+
+        while (true) {
+            if (!readInteger("Quantity: ", quantity, 1)) {
+                return;
+            }
+
+            if (quantity > remaining) {
+                std::cout << "Only " << remaining
+                        << " units are available. Please try again.\n";
+                continue;
+            }
+
+            if (!distribution.addItem(foodItemId, quantity)) {
+                std::cout << "Could not add that quantity. "
+                            "Please try again.\n";
+                continue;
+            }
+
+            break;
         }
     }
 
@@ -117,23 +192,37 @@ void AddFoodItem(InventoryService& service) {
 
     std::cout << "\nAdd Food Item\n\n";
 
-    std::cout << "Food item ID: ";
-    if (!(std::cin >> id) || id <= 0) {
-        std::cout << "Invalid ID. Please enter a positive number.\n";
-        return;
+    while (true) {
+        if (!readInteger("Food item ID: ", id, 1)) {
+            return;
+        }
+
+        if (service.getFoodItem(id) != nullptr) {
+            std::cout << "That food item ID already exists. "
+                        "Please try again.\n";
+            continue;
+        }
+
+        break;
     }
 
-    // Remove the newline left by reading the ID.
-    std::cin.ignore(
-        std::numeric_limits<std::streamsize>::max(), '\n'
-    );
+    while (true) {
+        std::cout << "Food name: ";
 
-    std::cout << "Food name: ";
-    std::getline(std::cin, name);
+        if (!std::getline(std::cin, name)) {
+            return;
+        }
 
-    std::cout << "Starting quantity: ";
-    if (!(std::cin >> quantity) || quantity <= 0) {
-        std::cout << "Invalid quantity. Please enter one or more.\n";
+        if (name.find_first_not_of(" \t\r\n\f\v") ==
+            std::string::npos) {
+            std::cout << "Food name cannot be blank. Please try again.\n";
+            continue;
+        }
+
+        break;
+    }
+
+    if (!readInteger("Starting quantity: ", quantity, 1)) {
         return;
     }
 
@@ -154,19 +243,15 @@ void AddFoodItem(InventoryService& service) {
     while (true) {
     std::cout << "Expiration date (YYYY-MM-DD): ";
 
-    if (!(std::cin >> expirationDate)) {
-        if (std::cin.eof() || std::cin.bad()) {
-            return;
-        }
-
-        std::cin.clear();
-        std::cin.ignore(
-            std::numeric_limits<std::streamsize>::max(), '\n'
-        );
-
-        std::cout << "Invalid date input. Please try again.\n";
-        continue;
+    if (!std::getline(std::cin, expirationDate)) {
+        return;
     }
+
+    if (!isValidCalendarDate(expirationDate)) {
+        std::cout << "Enter a valid date in YYYY-MM-DD format. "
+                 "Please try again.\n";
+        continue;
+    }   
 
     if (expirationDate < currentDate) {
         std::cout << "Cannot add food with an expiration date "
@@ -202,30 +287,21 @@ int main() {
         std::cout << "2. Add food item\n";
         std::cout << "4. Register distribution\n";
         std::cout << "5. Exit\n";
-        std::cout << "\nChoose an option: ";
 
         int choice;
 
-        if (!(std::cin >> choice)) {
-            // Exit if input has ended.
-            if (std::cin.eof() || std::cin.bad()) {
+        while (true) {
+            if (!readInteger("\nChoose an option: ", choice, 1)) {
+                return 0;
+            }
+
+            if (choice == 1 || choice == 2 ||
+                choice == 4 || choice == 5) {
                 break;
             }
 
-            // Deletes the error and invalid input.
-            std::cin.clear();
-            std::cin.ignore(
-                std::numeric_limits<std::streamsize>::max(), '\n'
-            );
-
-            std::cout << "Please enter a menu number.\n";
-            continue;
+            std::cout << "Please choose 1, 2, 4 or 5. Please try again.\n";
         }
-
-        // Deletes the rest of the input line.
-        std::cin.ignore(
-            std::numeric_limits<std::streamsize>::max(), '\n'
-        );
 
         if (choice == 5) {
             break;
@@ -249,16 +325,8 @@ int main() {
                 break;
         }
 
-        // Recovers if the action encountered invalid input.
-        if (std::cin.eof() || std::cin.bad()) {
+        if (!std::cin) {
             break;
-        }
-
-        if (std::cin.fail()) {
-            std::cin.clear();
-            std::cin.ignore(
-                std::numeric_limits<std::streamsize>::max(), '\n'
-            );
         }
     }
 

@@ -10,6 +10,7 @@ add_library(pantry_lib
     src/Distribution.cpp
     src/FoodItem.cpp
     src/InventoryService.cpp
+    src/DateUtils.cpp
 )
 target_include_directories(pantry_lib PUBLIC include)
 
