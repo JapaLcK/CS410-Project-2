@@ -11,6 +11,7 @@ add_library(pantry_lib
     src/FoodItem.cpp
     src/InventoryService.cpp
     src/DateUtils.cpp
+    src/ConsoleInput.cpp
 )
 target_include_directories(pantry_lib PUBLIC include)
 
@@ -41,17 +42,43 @@ if(BUILD_TESTING)
 
     include(GoogleTest)
     gtest_discover_tests(distribution_tests)
+    
     add_executable(
     inventory_service_tests
     tests/test_InventoryService.cpp
-)
+    )
 
-target_link_libraries(
-    inventory_service_tests
-    PRIVATE pantry_lib GTest::gtest_main
-)
+    target_link_libraries(
+        inventory_service_tests
+        PRIVATE pantry_lib GTest::gtest_main
+    )
 
-gtest_discover_tests(inventory_service_tests)
+    gtest_discover_tests(inventory_service_tests)
+
+    add_executable(
+        console_input_tests
+        tests/test_ConsoleInput.cpp
+    )
+
+    target_link_libraries(
+        console_input_tests
+        PRIVATE pantry_lib GTest::gtest_main
+    )
+
+    gtest_discover_tests(console_input_tests)
+
+    add_executable(
+        date_utils_tests
+        tests/test_DateUtils.cpp
+    )
+
+    target_link_libraries(
+        date_utils_tests
+        PRIVATE pantry_lib GTest::gtest_main
+    )
+
+    gtest_discover_tests(date_utils_tests)
+    
 endif()
 
 add_executable(food_pantry src/main.cpp)

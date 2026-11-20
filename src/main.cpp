@@ -8,32 +8,7 @@
 #include "FoodItem.h"
 #include "InventoryService.h"
 #include "DateUtils.h"
-
-bool readInteger(const std::string& prompt, int& value, int minimum) {
-    std::string input;
-
-    while (true) {
-        std::cout << prompt;
-
-        if (!std::getline(std::cin, input)) {
-            return false; // Input ended or could not be read.
-        }
-
-        std::istringstream stream(input);
-        int number;
-        char extra;
-
-        if ((stream >> number) &&
-            !(stream >> extra) &&
-            number >= minimum) {
-            value = number;
-            return true;
-        }
-
-        std::cout << "Please enter a whole number of at least "
-                  << minimum << ". Please try again.\n";
-    }
-}
+#include "ConsoleInput.h"
 
 void displayInventory(const InventoryService& service) {
     const auto items = service.getInventoryItems();
@@ -51,6 +26,70 @@ void displayInventory(const InventoryService& service) {
                   << "\nQuantity: " << item.getQuantityAvailable()
                   << "\nExpires: " << item.getExpirationDate()
                   << "\n";
+    }
+}
+
+void recordDonation(InventoryService& service) {
+    if (service.getInventoryItems().empty()) {
+        std::cout << "Inventory is empty. Add a food item first.\n";
+        return;
+    }
+
+    std::cout << "\nRecord Donation\n";
+
+    int foodItemId;
+    const FoodItem* item = nullptr;
+
+    while (true) {
+        if (!readInteger("\nFood item ID: ", foodItemId, 1)) {
+            return;
+        }
+
+        item = service.getFoodItem(foodItemId);
+
+        if (item == nullptr) {
+            std::cout << "That food item ID does not exist. "
+                         "Please try again.\n";
+            continue;
+        }
+
+        if (item->getQuantityAvailable() ==
+            std::numeric_limits<int>::max()) {
+            std::cout << "That item's stock is already at the maximum. "
+                         "Please choose another item.\n";
+            continue;
+        }
+
+        break;
+    }
+
+    while (true) {
+        int quantity;
+
+        if (!readInteger("Donation quantity: ", quantity, 1)) {
+            return;
+        }
+
+        int maximumDonation =
+            std::numeric_limits<int>::max() -
+            item->getQuantityAvailable();
+
+        if (quantity > maximumDonation) {
+            std::cout << "The maximum donation for this item is "
+                      << maximumDonation << ". Please try again.\n";
+            continue;
+        }
+
+        if (!service.addDonation(foodItemId, quantity)) {
+            std::cout << "Could not record the donation. "
+                         "Please try again.\n";
+            continue;
+        }
+
+        std::cout << "Donation recorded successfully.\n";
+        std::cout << "Updated stock: "
+                  << item->getQuantityAvailable() << "\n";
+        break;
     }
 }
 
@@ -285,6 +324,7 @@ int main() {
         std::cout << "\nFood Pantry Menu\n\n";
         std::cout << "1. View inventory\n";
         std::cout << "2. Add food item\n";
+        std::cout << "3. Record donation\n";
         std::cout << "4. Register distribution\n";
         std::cout << "5. Exit\n";
 
@@ -295,12 +335,11 @@ int main() {
                 return 0;
             }
 
-            if (choice == 1 || choice == 2 ||
-                choice == 4 || choice == 5) {
+            if (choice >= 1 && choice <= 5) {
                 break;
             }
 
-            std::cout << "Please choose 1, 2, 4 or 5. Please try again.\n";
+            std::cout << "Please choose 1, 2, 3, 4 or 5. Please try again.\n";
         }
 
         if (choice == 5) {
@@ -316,12 +355,16 @@ int main() {
                 AddFoodItem(service);
                 break;
 
+            case 3:
+                recordDonation(service);
+                break;    
+
             case 4:
                 registerDistribution(service);
                 break;
 
             default:
-                std::cout << "Please choose 1, 2, 4 or 5.\n";
+                std::cout << "Please choose 1, 2, 3, 4 or 5.\n";
                 break;
         }
 
