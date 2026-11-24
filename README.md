@@ -177,21 +177,8 @@ Recorded distributions: 1
 
 Repeated food item IDs accumulate their quantities.
 
-### Rejected Distribution
-
-Restart the application. Enter household ID 1, staff ID 1, and date 2026-10-29. Request 100 units of Rice (item ID 1), then enter 0 to submit.
-
-Expected result while the example food has not expired:
-
-```text
-Distribution rejected: Insufficient inventory.
-
-Remaining inventory:
-Rice: 50
-Pasta: 30
-Beans: 20
-Recorded distributions: 0
-```
+If no unexpired food is in stock when you choose option 4, the application
+displays a message and returns to the main menu.
 
 ## Run Tests
 

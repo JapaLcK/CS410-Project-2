@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <ctime>
 #include <iostream>
 #include <string>
@@ -104,6 +105,19 @@ void registerDistribution(InventoryService& service){
     }
 
     std::string currentDate = dateBuffer;
+
+    const auto items = service.getInventoryItems();
+    const bool hasAvailableFood = std::any_of(
+        items.begin(), items.end(), [&currentDate](const FoodItem& item) {
+            return item.getQuantityAvailable() > 0 &&
+                   item.getExpirationDate() >= currentDate;
+        });
+
+    if (!hasAvailableFood) {
+        std::cout << "No unexpired food is in stock for distribution.\n";
+        return;
+    }
+
     int householdId;
     int staffId;
     std::string date;
