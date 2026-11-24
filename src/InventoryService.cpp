@@ -1,44 +1,8 @@
 
 #include "InventoryService.h"
+#include "DateUtils.h"
 
 #include <limits>
-
-namespace {
-
-bool isValidCalendarDate(const std::string& date) {
-    // YYYY-MM-DD has exactly 10 characters, with hyphens at positions 4 and 7.
-    if (date.size() != 10 || date[4] != '-' || date[7] != '-') {
-        return false;
-    }
-
-    // The two hyphens were checked above. Every other character must be a digit.
-    for (int i = 0; i < 10; i++) {
-        if (i != 4 && i != 7 && (date[i] < '0' || date[i] > '9')) {
-            return false;
-        }
-    }
-
-    // Convert the three numeric fields so we can check the calendar date.
-    const int year = std::stoi(date.substr(0, 4));
-    const int month = std::stoi(date.substr(5, 2));
-    const int day = std::stoi(date.substr(8, 2));
-
-    // Reject year zero, months outside 1–12, and days below 1.
-    if (year == 0 || month < 1 || month > 12 || day < 1) {
-        return false;
-    }
-
-    // Use the usual month lengths and add a day to February in leap years.
-    const int daysPerMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    // Century years are leap years only when divisible by 400.
-    const bool leapYear = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-    const int extraDay = month == 2 && leapYear ? 1 : 0;
-
-    // Months start at 1, while array indexes start at 0.
-    return day <= daysPerMonth[month - 1] + extraDay;
-}
-
-}
 
 bool InventoryService::addFoodItem(const FoodItem& item) {
     // Validate the item before inserting it into inventory.
