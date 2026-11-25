@@ -4,6 +4,13 @@
 #include <iostream>
 #include <string>
 
+bool readLine(
+    const std::string& prompt,
+    std::string& line,
+    std::istream& input = std::cin,
+    std::ostream& output = std::cout
+);
+
 bool readInteger(
     const std::string& prompt,
     int& value,

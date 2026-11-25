@@ -12,3 +12,6 @@ __pycache__/
 
 .vscode/
 run_tests
+
+food-pantry.sqlite3
+food-pantry.sqlite3-journal

@@ -18,6 +18,8 @@ private:
 public:
     bool addFoodItem(const FoodItem& item);
 
+    bool removeFoodItem(int foodItemId);
+
     bool addDonation(int foodItemId, int quantity);
 
     bool processDistribution(
@@ -25,6 +27,12 @@ public:
         const std::string& currentDate,
         std::string& errorMessage
     );
+
+    InventoryService() = default;
+    explicit InventoryService(std::vector<Distribution> savedDistributions);
+
+    const std::vector<Distribution>& getDistributions() const;
+
 
     const FoodItem* getFoodItem(int foodItemId) const;
 
