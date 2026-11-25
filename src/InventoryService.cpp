@@ -1,8 +1,15 @@
 
 #include "InventoryService.h"
 #include "DateUtils.h"
-
+#include <utility>
 #include <limits>
+
+InventoryService::InventoryService(std::vector<Distribution> savedDistributions)
+    : distributions(std::move(savedDistributions)) {}
+
+const std::vector<Distribution>& InventoryService::getDistributions() const {
+    return distributions;
+}
 
 bool InventoryService::addFoodItem(const FoodItem& item) {
     // Validate the item before inserting it into inventory.
@@ -17,13 +24,17 @@ bool InventoryService::addFoodItem(const FoodItem& item) {
     return inventory.emplace(item.getId(), item).second;
 }
 
+bool InventoryService::removeFoodItem(int foodItemId) {
+    return inventory.erase(foodItemId) != 0;
+}
+
 bool InventoryService::addDonation(int foodItemId, int quantity) {
     // Find the item by ID and require a positive donation quantity.
     auto it = inventory.find(foodItemId);
     if (it == inventory.end() || quantity <= 0) {
         return false;
     }
-
+    
     // Check how many more units fit in an int before adding any stock.
     FoodItem& item = it->second;
     const int remainingSpace = std::numeric_limits<int>::max() - item.getQuantityAvailable();
@@ -123,3 +134,5 @@ bool InventoryService::processDistribution(
     errorMessage = "Distribution completed successfully.";
     return true;
 }
+
+

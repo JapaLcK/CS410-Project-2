@@ -12,26 +12,25 @@ A CS 410 project to help pantry volunteers track donated inventory and record fo
 
 ## Current Status
 
-The console application provides a menu to view inventory, add food items,
-record donations, register distributions, and exit. Users can perform multiple
-actions in one session, with inventory updates reflected in subsequent actions.
+The console application provides a menu to view inventory, add and remove food
+items, record donations, and register distributions. Users can perform multiple
+actions in one session and see updated stock after each completed action.
 
-Invalid input prompts users to try again without restarting the operation.
-When adding food through the menu, users must enter a unique positive ID,
-a nonblank name, a positive starting quantity, and a valid expiration
-date that is not in the past.
+Invalid input prompts users to try again. Enter `:cancel` at any input prompt
+during an operation to discard that operation and return to the main menu.
 
-Donations increase the stock of an existing food item. Distribution requests
-require positive household and staff IDs, a valid calendar date, and available,
-unexpired food. Repeated food item IDs accumulate their requested quantities.
+When adding food, users must enter a unique positive ID, a nonblank name, a
+positive starting quantity, and a valid expiration date that is today or later.
+Donations increase the stock of an existing food item.
 
-Successful distributions reduce stock and create a distribution record.
-InventoryService validates requests before changing inventory or recording
-a distribution.
+Distribution requests require positive household and staff IDs, a valid
+calendar date, and sufficient stock of unexpired food. Repeated food item IDs
+accumulate their requested quantities. `InventoryService` validates the entire
+request before reducing stock or recording the distribution.
 
-Shared helpers handle calendar-date validation and numeric input.
-Automated tests cover these helpers and the existing distribution and
-inventory services.
+Inventory and distribution records are saved in a local SQLite database when
+the application exits normally. They are loaded the next time the program starts
+from the same directory.
 
 ## Initial Product-Owner Questions
 
@@ -43,18 +42,19 @@ inventory services.
 
 ## Repository Structure
 
-- `include/`: C++ class declarations and shared utility declarations.
-- `src/`: C++ implementations and the application entry point, `main.cpp`.
-- `tests/`: automated tests.
-- `.github/workflows/`: continuous integration configuration.
-- `CMakeLists.txt`: build and test configuration.
+- `include/` contains C++ class and utility declarations.
+- `src/` contains C++ implementations and the application entry point, `main.cpp`.
+- `tests/` contains automated tests.
+- `.github/workflows/` contains the continuous integration configuration.
+- `CMakeLists.txt` contains the build and test configuration.
 
 ## Prerequisites
 
 - A C++17-compatible compiler.
-- CMake 3.16 or newer, available in PATH.
+- CMake 3.16 or newer, available in `PATH`.
 - A build tool such as Make or Ninja.
-- Git and internet access to download GoogleTest during the first configuration.
+- SQLite 3 development headers and library. On Ubuntu or Debian, install `libsqlite3-dev`.
+- Git and internet access to download GoogleTest during the first test configuration.
 
 ## Configure and Build
 
@@ -83,74 +83,89 @@ Food Pantry Menu
 3. Record donation
 4. Register distribution
 5. Exit
+6. Remove food item
+Type :cancel at any prompt to return to the main menu.
 
 Choose an option:
 ```
 
-Choose an option by entering its number:
+- **1. View inventory** displays food item IDs, names, quantities, and expiration dates.
+- **2. Add food item** asks for a unique positive ID, a nonblank name, a positive
+  starting quantity, and an expiration date in `YYYY-MM-DD` format.
+- **3. Record donation** asks for an existing food item ID and a positive quantity
+  to add to its stock.
+- **4. Register distribution** asks for a household ID, staff ID, and distribution
+  date, followed by food item IDs and quantities. After adding at least one
+  item, enter `0` at the food item ID prompt to submit the distribution.
+- **5. Exit** saves the current inventory and distribution history and closes the application.
+- **6. Remove food item** asks for an existing food item ID and confirmation.
+  Enter `y` to remove the item and all its remaining stock or `n` to return
+  to the main menu. Earlier distribution records retain the item ID.
 
-- **1. View inventory:** Display all current food items, including their IDs, names, quantities, and expiration dates.
-- **2. Add food item:** Enter a unique positive food item ID, a nonblank name, a positive starting quantity, and an expiration date in `YYYY-MM-DD` format. The expiration date must be a real calendar date and cannot be in the past.
-- **3. Record donation:** Enter an existing food item ID and a positive quantity to add to its stock.
-- **4. Register distribution:** Enter positive household and staff IDs and a valid distribution date in `YYYY-MM-DD` format. Then enter food item IDs and requested quantities. Enter `0` as the food item ID to submit the distribution after adding at least one item.
-- **5. Exit:** Close the application.
+### Cancel an Operation
 
-Invalid input displays an error message and prompts you to try again. Successful distributions reduce available stock and are recorded. Rejected distributions leave inventory and distribution records unchanged. Food expiration checks use the current system date.
+Enter `:cancel` at any input prompt during an operation to return to the main
+menu. For example, if you enter `:cancel` after adding items to a draft
+distribution, the draft is discarded and the stock stays the same. Actions
+completed earlier in the session remain in effect.
 
-After an operation finishes, the main menu appears again. You can perform multiple actions in one session, and inventory changes remain available throughout that session.
+### Saved Data
 
-The application starts with this example inventory:
+The application uses `food-pantry.sqlite3` in the directory where it was started.
+Choose **5. Exit** to save your work. Start the program from the same directory
+to load the saved inventory and distribution records. To run a fresh demo,
+launch the executable from a separate empty directory.
+
+On the first run, the application starts with this example inventory:
 
 | Food Item ID | Name | Quantity | Expiration Date |
-|---|---|---|---|
+|---|---|---:|---|
 | 1 | Rice | 50 | 2027-12-31 |
 | 2 | Pasta | 30 | 2027-12-31 |
 | 3 | Beans | 20 | 2027-12-31 |
 
-**Note:** Inventory and distribution records are stored only in memory. Changes are not saved after exiting the application.
-
 ## Example Usage
 
-Complete these steps in one session:
+Complete these steps with a fresh database:
 
 | Step | Menu option | Input | Expected result |
-|---|---|---|---|
-| Add an item | 2 | ID: 4, name: Canned Soup, quantity: 20, expiration: 2028-12-31 | Item is added with 20 units |
-| Record a donation | 3 | Food item ID: 4, quantity: 5 | Stock increases to 25 |
-| View inventory | 1 | No additional input | Canned Soup shows 25 units |
-| Register a distribution | 4 | Household ID: 1, staff ID: 1, date: 2026-11-20, food item ID: 4, quantity: 3, then food item ID: 0 | Distribution is recorded |
-| View inventory | 1 | No additional input | Canned Soup shows 22 units |
+|---|---:|---|---|
+| Add an item | 2 | ID `4`, name `Canned Soup`, quantity `20`, expiration `2028-12-31` | Canned Soup has 20 units. |
+| Record a donation | 3 | Item ID `4`, quantity `5` | Stock increases to 25. |
+| View inventory | 1 | No additional input | Canned Soup shows 25 units. |
+| Cancel a distribution | 4 | Household ID `1`, staff ID `1`, today's date, item ID `4`, quantity `10`, then `:cancel` at the next item ID prompt | The main menu returns and Canned Soup still has 25 units. |
+| Register a distribution | 4 | Household ID `1`, staff ID `1`, today's date, item ID `4`, quantity `3`, then item ID `0` | The distribution is recorded and 22 units remain. |
+| Remove an item | 6 | Item ID `2`, then `y` to confirm | Pasta is removed from the inventory. |
+| Save and restart | 5, then 1 after restarting | Start the application from the same directory and view inventory | Canned Soup still has 22 units and Pasta is absent. |
 
-Use an expiration date that is not in the past when running the example.
-The food must also be unexpired when registering the distribution.
+Enter dates in `YYYY-MM-DD` format. If the example expiration date has passed,
+use a later date when adding Canned Soup.
 
 ### Invalid Input and Retries
 
-Invalid answers display an error message and repeat the relevant prompt:
+- Entering `abc` or `2.5` at a numeric prompt repeats the prompt.
+- Entering an existing ID when adding food asks for a different ID.
+- Entering a blank food name asks for a name again.
+- Entering an invalid date such as `2028-02-30` or an expiration date in the
+  past asks for another date.
+- Entering an unknown item ID when donating, distributing, or removing food
+  asks for another ID.
+- Requesting more units than are available asks for another quantity.
 
-- Enter `abc` or `2.5` at a numeric prompt: the numeric prompt appears again.
-- Enter an existing ID when adding food: the ID prompt appears again.
-- Enter a blank food name: the name prompt appears again.
-- Enter `2028-02-30` as an expiration date: the date prompt appears again.
-- Enter a past expiration date: the date prompt appears again.
-- Enter an unknown food item ID when recording a donation or distribution:
-  the food item ID prompt appears again.
-- Request more units than are available: the quantity prompt appears again.
+Previously entered valid fields are kept while the user corrects the invalid
+answer. Rejected requests leave inventory and distribution records unchanged.
 
-Previously entered valid fields are retained while the user corrects the
-invalid answer. Inventory changes occur only when the operation succeeds.
+For example, with the initial stock of 50 units of Rice, choose option `4`
+and request 100 units. The application asks for another quantity. Enter `5`,
+then enter `0` at the next food item ID prompt to submit. Rice now has 45 units.
 
-For example, in a fresh session, choose option 4 and request 100 units of
-Rice, which starts with 50 units. The application prompts for another
-quantity without changing stock. Enter 5, then enter 0 at the food item ID
-prompt to submit. After the distribution succeeds, Rice has 45 units.
-
-Entering 0 submits a distribution only at the food item ID prompt.
-It is not a valid requested quantity.
+If no unexpired food is in stock when you choose option `4`, the application
+displays a message and returns to the main menu. Expiration checks use the
+current system date.
 
 ### Successful Distribution
 
-Enter these values when prompted:
+With the initial example inventory, choose option `4` and enter:
 
 ```text
 Household ID: 1
@@ -163,22 +178,23 @@ Quantity: 3
 Food item ID (0 to submit): 0
 ```
 
-Expected result while the example food has not expired:
+Expected output on a fresh database while the example food is unexpired:
 
 ```text
 Distribution recorded successfully.
 
-Remaining inventory:
-Rice: 45
-Pasta: 27
-Beans: 20
+Current inventory:
+1 - Rice
+Quantity: 45
+Expires: 2027-12-31
+2 - Pasta
+Quantity: 27
+Expires: 2027-12-31
+3 - Beans
+Quantity: 20
+Expires: 2027-12-31
 Recorded distributions: 1
 ```
-
-Repeated food item IDs accumulate their quantities.
-
-If no unexpired food is in stock when you choose option 4, the application
-displays a message and returns to the main menu.
 
 ## Run Tests
 
@@ -200,28 +216,25 @@ Automated tests cover:
 - Calendar-date formats, month lengths, and leap-year rules.
 - Numeric input validation, retry messages, and end-of-input handling.
 
-Console-input tests use simulated input and captured output.
-The helper tests do not automate the complete interactive menu workflow;
-use the example workflow above to check application integration manually.
+Use the **Example Usage** steps to manually verify cancellation, item removal,
+and persistence after a restart.
 
 ## Continuous Integration
 
-GitHub Actions builds the project and runs automated tests on pushes and pull requests. Check the pull request's Checks tab for the current CI result.
+GitHub Actions builds the project and runs automated tests on pushes and pull
+requests. Check the pull request's **Checks** tab for the current CI result.
 
 ## Current Limitations
 
-- Inventory and distribution records are stored only in memory and reset
-  whenever the application restarts.
-- The initial inventory is hardcoded for demonstration purposes.
-- The example food expires after 2027-12-31; update the demo inventory dates
-  for later demonstrations.
-- Household and staff IDs must be positive but are not verified against
-  existing records.
+- Changes are saved when the application exits normally. A forced shutdown can
+  discard changes made during the active session.
+- One application session at a time can edit a given database.
+- The initial inventory is hardcoded for demonstration purposes. The sample
+  items expire after `2027-12-31`.
+- Household and staff IDs must be positive. The application stores them as
+  entered without looking up household or staff records.
 - Donations increase stock for an existing item without tracking separate
   batches or expiration dates.
-- Distribution dates are validated as calendar dates but are not restricted
-  to today.
-- There is no explicit cancel or return-to-menu command during an operation.
-  The menu reappears automatically after an operation finishes.
+- Distribution dates can be any valid calendar date.
 - Search, reports, and additional item-status features listed in the project
-  goals are not implemented in the current console workflow.
+  goals are outside the current console workflow.

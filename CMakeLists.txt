@@ -81,5 +81,14 @@ if(BUILD_TESTING)
     
 endif()
 
-add_executable(food_pantry src/main.cpp)
-target_link_libraries(food_pantry PRIVATE pantry_lib)
+find_package(SQLite3 REQUIRED)
+
+if(TARGET SQLite3::SQLite3)
+    set(pantry_sqlite_target SQLite3::SQLite3)
+else()
+    set(pantry_sqlite_target SQLite::SQLite3)
+endif()
+
+add_executable(food_pantry src/main.cpp src/PantryDatabase.cpp)
+target_link_libraries(food_pantry PRIVATE pantry_lib ${pantry_sqlite_target})
+
